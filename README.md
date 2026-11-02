@@ -27,10 +27,10 @@ A 64px `omarchy.spacer` belongs between the label and the clock. The Setup secti
 
 Left-click and right-click both refresh. If the CLI is missing or signed out, the label says `no grok` or `sign in`, and a click opens `grok login` in a terminal.
 
-The reading refreshes every 15 minutes. The countdown ticks locally from the reset timestamp, so it does not call xAI every minute. Change the interval with:
+The reading refreshes every 5 minutes. The countdown ticks locally from the reset timestamp, so it does not call xAI every minute. Change the interval with:
 
 ```bash
-omarchy bar set usage.limits refreshIntervalSec 900 --json
+omarchy bar set usage.limits refreshIntervalSec 300 --json
 ```
 
 ## What is stored

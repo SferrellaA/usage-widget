@@ -24,8 +24,8 @@ BarWidget {
   property double expiryRefreshAt: 0
 
   readonly property int refreshIntervalSec: {
-    var value = Number(setting("refreshIntervalSec", 900))
-    if (!isFinite(value)) return 900
+    var value = Number(setting("refreshIntervalSec", 300))
+    if (!isFinite(value)) return 300
     return Math.max(60, Math.min(3600, Math.round(value)))
   }
 

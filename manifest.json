@@ -19,7 +19,7 @@
     "allowMultiple": false,
     "defaultSection": "right",
     "defaults": {
-      "refreshIntervalSec": 900
+      "refreshIntervalSec": 300
     },
     "schema": [
       {
@@ -29,7 +29,7 @@
         "min": 60,
         "max": 3600,
         "step": 60,
-        "defaultValue": 900
+        "defaultValue": 300
       }
     ]
   }

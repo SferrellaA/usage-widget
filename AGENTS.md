@@ -88,6 +88,14 @@ Do not restart it in a loop. The label should look like `61% · 4h 12m`, with th
 - `usage_widget/billing.py` is the only code allowed to touch the Grok session.
 - `bin/usage-collect` prints one secret-free JSON record and writes the same record to the state file.
 
+Do not fork `omarchy.agents` to add a provider. That panel is a display for records another program writes, and a fork goes stale on the next Omarchy update. A new provider is another collector that emits the same public record. The bar only reads `percentUsed` and `resetsAt`.
+
+## What the number is
+
+`percentUsed` is the shared weekly pool, `creditUsagePercent` from Grok billing. It is not the Grok Build, Chat, or Voice slice. Those product rows are a split of the same pool. Do not draw a missing product as 0%. If billing omits `creditUsagePercent`, the record is not ok. Do not invent a percent from local session files.
+
+The bar label is `sign in` when the CLI session is missing, `no grok` when the binary is missing, `usage?` when billing failed and there is no last good reading, and `…` before the first fetch. A failed refresh keeps the last good percent on screen.
+
 ## Display
 
 Percent is amount used, rounded half up, clamped to 0–100.
