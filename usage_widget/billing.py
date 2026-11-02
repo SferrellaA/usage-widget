@@ -147,7 +147,76 @@ def _window(period_type: str) -> str:
     return "period"
 
 
-def parse_billing(payload: dict[str, Any]) -> dict[str, Any]:
+def _parse_time(value: str) -> datetime | None:
+    text = value.strip()
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    try:
+        parsed = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed
+
+
+def _previous_resets_at(path: Path | None = None) -> str | None:
+    """Reset time of the last good public record, if we still have one."""
+    try:
+        data = json.loads((path or state_path()).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if not isinstance(data, dict) or data.get("ok") is not True:
+        return None
+    resets_at = str(data.get("resetsAt") or "").strip()
+    return resets_at or None
+
+
+def usage_percent(
+    config: dict[str, Any],
+    *,
+    now: datetime | None = None,
+    previous_resets_at: str | None = None,
+) -> float:
+    """Read the shared pool percent.
+
+    A new window often omits ``creditUsagePercent`` until the first charge.
+    That is 0% used, not a failed read. The same omission on a window we
+    already have a percent for is a glitch: keep the last good reading.
+    Product rows are never summed into this number.
+    """
+    raw = config.get("creditUsagePercent")
+    if raw is not None:
+        try:
+            percent = float(raw)
+        except (TypeError, ValueError):
+            raise Unavailable("billing payload had no usage percent") from None
+        if percent != percent or percent < 0 or percent > 100:
+            raise Unavailable("billing payload had an unusable usage percent")
+        return percent
+    products = config.get("productUsage")
+    if isinstance(products, list) and products:
+        raise Unavailable("billing payload had no usage percent")
+    period = config.get("currentPeriod") if isinstance(config.get("currentPeriod"), dict) else {}
+    resets_at = str((period or {}).get("end") or config.get("billingPeriodEnd") or "").strip()
+    end = _parse_time(resets_at)
+    moment = now or datetime.now(timezone.utc)
+    if end is None or end <= moment:
+        raise Unavailable("billing payload had no usage percent")
+    start = _parse_time(str((period or {}).get("start") or config.get("billingPeriodStart") or ""))
+    if start is not None and start > moment:
+        raise Unavailable("billing payload had no usage percent")
+    if previous_resets_at and previous_resets_at == resets_at:
+        raise Unavailable("billing payload had no usage percent")
+    return 0.0
+
+
+def parse_billing(
+    payload: dict[str, Any],
+    *,
+    now: datetime | None = None,
+    previous_resets_at: str | None = None,
+) -> dict[str, Any]:
     """Pull the shared weekly pool out of a billing payload.
 
     ``creditUsagePercent`` is the amount already used, on a 0-100 scale.
@@ -158,12 +227,7 @@ def parse_billing(payload: dict[str, Any]) -> dict[str, Any]:
     config = payload.get("config") if isinstance(payload.get("config"), dict) else payload
     if not isinstance(config, dict):
         raise Unavailable("billing payload had no config")
-    try:
-        percent = float(config.get("creditUsagePercent"))
-    except (TypeError, ValueError):
-        raise Unavailable("billing payload had no usage percent") from None
-    if percent != percent or percent < 0 or percent > 100:
-        raise Unavailable("billing payload had an unusable usage percent")
+    percent = usage_percent(config, now=now, previous_resets_at=previous_resets_at)
     period = config.get("currentPeriod") if isinstance(config.get("currentPeriod"), dict) else {}
     resets_at = str((period or {}).get("end") or config.get("billingPeriodEnd") or "").strip()
     if resets_at == "":
@@ -260,7 +324,7 @@ def collect_acp(binary: str, timeout: float = 20) -> dict[str, Any]:
     result = message.get("result")
     if not isinstance(result, dict):
         raise Unavailable("billing result missing")
-    return parse_billing(result)
+    return parse_billing(result, previous_resets_at=_previous_resets_at())
 
 
 def _read_login(home: Path) -> dict[str, Any] | None:
@@ -317,7 +381,7 @@ def collect_http(home: Path, timeout: float = 10) -> dict[str, Any]:
         raise Unavailable("billing request failed") from exc
     if not isinstance(payload, dict):
         raise Unavailable("billing payload was not an object")
-    return parse_billing(payload)
+    return parse_billing(payload, previous_resets_at=_previous_resets_at())
 
 
 def collect(timeout: float = 20) -> dict[str, Any]:

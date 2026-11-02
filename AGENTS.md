@@ -92,9 +92,11 @@ Do not fork `omarchy.agents` to add a provider. That panel is a display for reco
 
 ## What the number is
 
-`percentUsed` is the shared weekly pool, `creditUsagePercent` from Grok billing. It is not the Grok Build, Chat, or Voice slice. Those product rows are a split of the same pool. Do not draw a missing product as 0%. If billing omits `creditUsagePercent`, the record is not ok. Do not invent a percent from local session files.
+`percentUsed` is the shared weekly pool, `creditUsagePercent` from Grok billing. It is not the Grok Build, Chat, or Voice slice. Those product rows are a split of the same pool. Do not draw a missing product as 0%, and do not sum product rows into the pool. Do not invent a percent from local session files.
 
-The bar label is `sign in` when the CLI session is missing, `no grok` when the binary is missing, `usage?` when billing failed and there is no last good reading, and `…` before the first fetch. A failed refresh keeps the last good percent on screen.
+A new window often omits `creditUsagePercent` until the first charge. That omission, with a current period and no product rows, is 0% used. The same omission on a window that already has a good reading is a failed refresh, not a reset to zero. A payload with no period and no percent is not ok.
+
+The bar label is `sign in` when the CLI session is missing, `no grok` when the binary is missing, `usage?` when billing failed and there is no last good reading, and `…` before the first fetch. A failed refresh keeps the last good percent only while that reading's reset time is still ahead. Once the window has ended, the label is `…` until a current-window reading arrives. Do not leave the old percent up as `100% · 0h 0m`.
 
 ## Display
 

@@ -44,17 +44,25 @@ BarWidget {
     }
     var end = Date.parse(resetsAt)
     remaining = isNaN(end) ? -1 : Math.floor((end - Date.now()) / 1000)
+    // The percent belongs to that window. Once it has ended, do not keep
+    // painting it as 100% · 0h 0m while the next window's reading is in flight.
+    if (remaining < 0 && ok && !fetchRunning && Date.now() - expiryRefreshAt > 10000) {
+      expiryRefreshAt = Date.now()
+      refresh()
+    }
   }
 
+  readonly property bool windowOpen: ok && percentUsed !== null && remaining >= 0
   readonly property string barText: {
-    if (ok && percentUsed !== null) return Format.label(percentUsed, remaining)
+    if (windowOpen) return Format.label(percentUsed, remaining)
     if (auth === "signed-out") return "sign in"
     if (auth === "missing") return "no grok"
-    if (auth === "") return "…"
+    if (auth === "" || (ok && remaining < 0)) return "…"
     return "usage?"
   }
-  readonly property bool urgent: ok && (remaining >= 0 && remaining < 3600 || Number(percentUsed) >= 90)
+  readonly property bool urgent: windowOpen && (remaining < 3600 || Number(percentUsed) >= 90)
   readonly property string tooltipText: {
+    if (ok && remaining < 0) return "Usage window reset, refreshing"
     if (!ok) return message !== "" ? message : "Usage unavailable"
     var when = Qt.formatDateTime(new Date(resetsAt), "ddd HH:mm")
     var planText = plan !== "" ? plan : "SuperGrok"
@@ -99,10 +107,6 @@ BarWidget {
 
   function tick() {
     recompute()
-    if (remaining <= 0 && ok && Date.now() - expiryRefreshAt > 60000) {
-      expiryRefreshAt = Date.now()
-      refresh()
-    }
   }
 
   function signIn() {
@@ -170,7 +174,7 @@ BarWidget {
       spacing: 5
 
       Image {
-        visible: root.ok
+        visible: root.windowOpen
         source: button.lightForeground
           ? Qt.resolvedUrl("assets/Grok_Logomark_Light.svg")
           : Qt.resolvedUrl("assets/Grok_Logomark_Dark.svg")
