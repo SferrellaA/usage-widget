@@ -48,7 +48,8 @@ BarWidget {
     // painting it as 100% · 0h 0m while the next window's reading is in flight.
     if (remaining < 0 && ok && !fetchRunning && Date.now() - expiryRefreshAt > 10000) {
       expiryRefreshAt = Date.now()
-      refresh()
+      // Same as a click: the window ended on every monitor, not just this one.
+      broadcast("refresh")
     }
   }
 
@@ -163,9 +164,11 @@ BarWidget {
     readonly property bool lightForeground: (foreground.r + foreground.g + foreground.b) / 3 >= 0.5
 
     onPressed: function(b) {
-      if (b === Qt.RightButton) root.refresh()
+      // Each monitor has its own widget. broadcast runs refresh on every
+      // live copy; a direct refresh() would leave the other bars stale.
+      if (b === Qt.RightButton) root.broadcast("refresh")
       else if (root.auth === "signed-out" || root.auth === "missing") root.signIn()
-      else root.refresh()
+      else root.broadcast("refresh")
     }
 
     Row {

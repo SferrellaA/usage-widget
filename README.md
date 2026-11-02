@@ -25,7 +25,7 @@ omarchy bar move usage.limits --section center --before omarchy.clock
 
 A 64px `omarchy.spacer` belongs between the label and the clock. The Setup section says how to size that spacer without resizing a different one.
 
-Left-click and right-click both refresh. If the CLI is missing or signed out, the label says `no grok` or `sign in`, and a click opens `grok login` in a terminal.
+Left-click and right-click both refresh every copy of the label, including the other monitors. If the CLI is missing or signed out, the label says `no grok` or `sign in`, and a click opens `grok login` in a terminal.
 
 The reading refreshes every 5 minutes. The countdown ticks locally from the reset timestamp, so it does not call xAI every minute. Change the interval with:
 
