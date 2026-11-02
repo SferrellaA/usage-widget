@@ -1,0 +1,64 @@
+import json
+import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
+
+from usage_widget.billing import (
+    PUBLIC_KEYS,
+    parse_billing,
+    public_record,
+    same_billing_host,
+    write_status,
+)
+
+FIXTURE = {
+    "subscription_tier": "SuperGrok",
+    "config": {
+        "currentPeriod": {
+            "type": "USAGE_PERIOD_TYPE_WEEKLY",
+            "end": "2026-11-09T21:39:21.847566+00:00",
+        },
+        "creditUsagePercent": 59.0,
+        "productUsage": [
+            {"product": "GrokBuild", "usagePercent": 43.0},
+            {"product": "GrokChat", "usagePercent": 15.0},
+        ],
+    },
+    "email": "should-not-leak@example.com",
+    "key": "should-not-leak",
+}
+
+
+class BillingTests(unittest.TestCase):
+    def test_parse_weekly_pool_not_product_split(self) -> None:
+        record = parse_billing(FIXTURE)
+        self.assertEqual(record["percentUsed"], 59.0)
+        self.assertEqual(record["resetsAt"], "2026-11-09T21:39:21.847566+00:00")
+        self.assertEqual(record["window"], "weekly")
+        self.assertEqual(record["plan"], "SuperGrok")
+        self.assertTrue(record["ok"])
+        self.assertEqual(set(record), set(PUBLIC_KEYS))
+        blob = json.dumps(record)
+        self.assertNotIn("should-not-leak", blob)
+        self.assertNotIn("GrokBuild", blob)
+        self.assertNotIn("email", blob)
+
+    def test_rejects_off_host_redirect(self) -> None:
+        self.assertTrue(same_billing_host("https://cli-chat-proxy.grok.com/v1/billing"))
+        self.assertFalse(same_billing_host("http://cli-chat-proxy.grok.com/v1/billing"))
+        self.assertFalse(same_billing_host("https://evil.example/v1/billing"))
+        self.assertFalse(same_billing_host("https://cli-chat-proxy.grok.com.evil.example/v1/billing"))
+
+    def test_status_file_is_private_and_secret_free(self) -> None:
+        record = public_record(ok=True, auth="ok", percent_used=12.0, resets_at="2026-11-09T00:00:00Z", window="weekly", plan="SuperGrok")
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "nested" / "status.json"
+            write_status(record, path)
+            self.assertEqual(path.stat().st_mode & 0o777, 0o600)
+            self.assertEqual(path.parent.stat().st_mode & 0o777, 0o700)
+            saved = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(set(saved), set(PUBLIC_KEYS))
+
+
+if __name__ == "__main__":
+    unittest.main()

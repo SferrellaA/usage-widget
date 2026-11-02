@@ -1,0 +1,28 @@
+{
+  "countdown": [
+    { "remaining": -5, "expected": "0h 0m" },
+    { "remaining": 0, "expected": "0h 0m" },
+    { "remaining": 59, "expected": "0h 0m" },
+    { "remaining": 60, "expected": "0h 1m" },
+    { "remaining": 3599, "expected": "0h 59m" },
+    { "remaining": 3600, "expected": "1h 0m" },
+    { "remaining": 5400, "expected": "1h 30m" },
+    { "remaining": 86399, "expected": "23h 59m" },
+    { "remaining": 86400, "expected": "1d 0h" },
+    { "remaining": 100800, "expected": "1d 4h" },
+    { "remaining": 273600, "expected": "3d 4h" },
+    { "remaining": 277199, "expected": "3d 4h" }
+  ],
+  "percent": [
+    { "value": 0, "expected": "0%" },
+    { "value": 59, "expected": "59%" },
+    { "value": 59.4, "expected": "59%" },
+    { "value": 59.5, "expected": "60%" },
+    { "value": 100, "expected": "100%" },
+    { "value": 140, "expected": "100%" }
+  ],
+  "label": [
+    { "percent": 59, "remaining": 273600, "expected": "59% · 3d 4h" },
+    { "percent": 90.2, "remaining": 1800, "expected": "90% · 0h 30m" }
+  ]
+}

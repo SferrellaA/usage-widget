@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "usage.limits",
+  "name": "Usage limits",
+  "version": "0.1.0",
+  "author": "SferrellaA",
+  "license": "MIT",
+  "description": "Bar label for how much of a weekly inference allowance is used, and when it resets. SuperGrok only for now.",
+  "kinds": ["bar-widget"],
+  "activation": "on-demand",
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Usage",
+    "description": "Weekly allowance used, and the time until it resets.",
+    "category": "AI",
+    "aliases": ["usage", "supergrok", "grok"],
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "refreshIntervalSec": 900
+    },
+    "schema": [
+      {
+        "key": "refreshIntervalSec",
+        "type": "integer",
+        "label": "Refresh interval (seconds)",
+        "min": 60,
+        "max": 3600,
+        "step": 60,
+        "defaultValue": 900
+      }
+    ]
+  }
+}
